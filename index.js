@@ -25,7 +25,7 @@ async function run() {
 
     // MongoDB Collection
     const database = client.db("summerCourseSchoolDB");
-    const users = database.collection("users");
+    const usersDB = database.collection("users");
 
     // Test API
     app.get("/", (req, res) => {
@@ -33,6 +33,11 @@ async function run() {
     });
 
     // Users API
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const result = await usersDB.insertOne(user);
+      res.send(result);
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
