@@ -26,6 +26,8 @@ async function run() {
     // MongoDB Collection
     const database = client.db("summerCourseSchoolDB");
     const usersDB = database.collection("users");
+    const classesDB = database.collection("classes");
+    const instructorsDB = database.collection("instructros");
 
     // Test API
     app.get("/", (req, res) => {
@@ -35,8 +37,26 @@ async function run() {
     // Users API
     app.post("/users", async (req, res) => {
       const user = req.body;
+      const filler = await usersDB.findOne({ email: user.email });
+      if (filler) {
+        return res.status(401).send({ message: "User Already Exit" });
+      }
       const result = await usersDB.insertOne(user);
       res.send(result);
+    });
+
+    // Classes API
+    app.get("/classes-popular", async (req, res) => {
+      const query = { popularity: "Popular" };
+      const result = await classesDB.find(query).toArray();
+      res.send(result);
+    });
+
+    // Instructors API
+    app.get("/instructors-popular", async (req, res) => {
+      const query = { popularity: "Popular" };
+      const popularInstructors = await instructorsDB.find(query).toArray();
+      res.send(popularInstructors);
     });
 
     await client.db("admin").command({ ping: 1 });
