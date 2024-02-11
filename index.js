@@ -28,6 +28,7 @@ async function run() {
     const usersDB = database.collection("users");
     const classesDB = database.collection("classes");
     const instructorsDB = database.collection("instructros");
+    const studentsFeedBackDB = database.collection("studentsFeedBacks");
 
     // Test API
     app.get("/", (req, res) => {
@@ -57,6 +58,59 @@ async function run() {
       const query = { popularity: "Popular" };
       const popularInstructors = await instructorsDB.find(query).toArray();
       res.send(popularInstructors);
+    });
+
+    app.get("/all-instructors", async (req, res) => {
+      const allCategory = await instructorsDB
+        .aggregate([
+          { $group: { _id: "$category", category: { $first: "$category" } } },
+          { $project: { _id: 0, category: "$_id" } },
+          { $sort: { category: 1 } },
+        ])
+        .toArray();
+
+      // Total Classes
+      const totalClasses = await instructorsDB
+        .aggregate([
+          {
+            $lookup: {
+              from: "classes",
+              localField: "email",
+              foreignField: "email",
+              as: "classes",
+            },
+          },
+          {
+            $unwind: "$classes",
+          },
+          {
+            $group: {
+              _id: "$email",
+              count: { $sum: 1 },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              email: "$_id",
+              count: 1,
+            },
+          },
+          {
+            $sort: { email: 1 },
+          },
+        ])
+        .toArray();
+
+      // All Instructors
+      const allInstructors = await instructorsDB.find().toArray();
+      res.send({ allCategory, allInstructors, totalClasses });
+    });
+
+    // Students API
+    app.get("/students-feedback", async (req, res) => {
+      const result = await studentsFeedBackDB.find().toArray();
+      res.send(result);
     });
 
     await client.db("admin").command({ ping: 1 });
