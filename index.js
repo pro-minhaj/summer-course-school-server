@@ -60,6 +60,11 @@ async function run() {
       res.send(popularInstructors);
     });
 
+    app.get("/total-instructors-count", async (req, res) => {
+      const totalDataCount = await instructorsDB.estimatedDocumentCount();
+      res.send({ totalDataCount });
+    });
+
     app.get("/all-instructors", async (req, res) => {
       const allCategory = await instructorsDB
         .aggregate([
@@ -69,42 +74,19 @@ async function run() {
         ])
         .toArray();
 
-      // Total Classes
-      const totalClasses = await instructorsDB
-        .aggregate([
-          {
-            $lookup: {
-              from: "classes",
-              localField: "email",
-              foreignField: "email",
-              as: "classes",
-            },
-          },
-          {
-            $unwind: "$classes",
-          },
-          {
-            $group: {
-              _id: "$email",
-              count: { $sum: 1 },
-            },
-          },
-          {
-            $project: {
-              _id: 0,
-              email: "$_id",
-              count: 1,
-            },
-          },
-          {
-            $sort: { email: 1 },
-          },
-        ])
+      // All Instructors
+      // Pagination
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 6;
+      const skip = (page - 1) * limit;
+
+      const allInstructors = await instructorsDB
+        .find()
+        .limit(limit)
+        .skip(skip)
         .toArray();
 
-      // All Instructors
-      const allInstructors = await instructorsDB.find().toArray();
-      res.send({ allCategory, allInstructors, totalClasses });
+      res.send({ allCategory, allInstructors });
     });
 
     // Students API
