@@ -62,6 +62,35 @@ async function run() {
       });
     });
 
+    app.get("/total-classes-count", async (req, res) => {
+      const totalDataCount = await classesDB.estimatedDocumentCount();
+      res.send({ totalDataCount });
+    });
+
+    app.get("/all-classes", async (req, res) => {
+      const query = { category: req.query?.category };
+      const allCategory = await classesDB
+        .aggregate([
+          { $group: { _id: "$category", category: { $first: "$category" } } },
+          { $project: { _id: 0, category: "$_id" } },
+          { $sort: { category: 1 } },
+        ])
+        .toArray();
+
+      // All Classes
+      // Pagination
+      const page = parseInt(req.query?.page) || 1;
+      const limit = parseInt(req.query?.limit) || 6;
+      const skip = (page - 1) * limit;
+
+      const allClasses = await classesDB
+        .find(query.category && query)
+        .limit(limit)
+        .skip(skip)
+        .toArray();
+      res.send({ allCategory, allClasses });
+    });
+
     // Instructors API
     app.get("/instructors-popular", async (req, res) => {
       const limit = req.query?.limit;
@@ -114,7 +143,10 @@ async function run() {
 
     // Students API
     app.get("/students-feedback", async (req, res) => {
-      const result = await studentsFeedBackDB.find().toArray();
+      const result = await studentsFeedBackDB
+        .find()
+        .sort({ Date: -1 })
+        .toArray();
       res.send(result);
     });
 
