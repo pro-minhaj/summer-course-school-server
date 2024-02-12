@@ -64,9 +64,15 @@ async function run() {
 
     // Instructors API
     app.get("/instructors-popular", async (req, res) => {
+      const limit = req.query?.limit;
       const query = { popularity: "Popular" };
-      const popularInstructors = await instructorsDB.find(query).toArray();
-      res.send(popularInstructors);
+      const totalPopularInstructors = await instructorsDB.countDocuments(query);
+      const popularInstructors = await instructorsDB
+        .find(query)
+        .limit(limit & limit)
+        .sort({ name: 1 })
+        .toArray();
+      res.send({ totalPopularInstructors, popularInstructors });
     });
 
     app.get("/total-instructors-count", async (req, res) => {
