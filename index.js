@@ -48,9 +48,18 @@ async function run() {
 
     // Classes API
     app.get("/classes-popular", async (req, res) => {
+      const limit = req.query?.limit;
       const query = { popularity: "Popular" };
-      const result = await classesDB.find(query).toArray();
-      res.send(result);
+      const totalPopularClasses = await classesDB.countDocuments(query);
+      const popularClasses = await classesDB
+        .find(query)
+        .limit(limit & limit)
+        .sort({ name: 1 })
+        .toArray();
+      res.send({
+        totalPopularClasses,
+        popularClasses,
+      });
     });
 
     // Instructors API
@@ -66,6 +75,7 @@ async function run() {
     });
 
     app.get("/all-instructors", async (req, res) => {
+      const query = { category: req.query?.category };
       const allCategory = await instructorsDB
         .aggregate([
           { $group: { _id: "$category", category: { $first: "$category" } } },
@@ -76,17 +86,24 @@ async function run() {
 
       // All Instructors
       // Pagination
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 6;
+      const page = parseInt(req.query?.page) || 1;
+      const limit = parseInt(req.query?.limit) || 6;
       const skip = (page - 1) * limit;
 
       const allInstructors = await instructorsDB
-        .find()
+        .find(query.category && query)
         .limit(limit)
         .skip(skip)
         .toArray();
 
       res.send({ allCategory, allInstructors });
+    });
+
+    app.get("/instructors/:category", async (req, res) => {
+      const category = req.params.category;
+      const query = { category: category };
+      const result = await instructorsDB.find(query).toArray();
+      res.send(result);
     });
 
     // Students API
