@@ -56,6 +56,7 @@ async function run() {
       res.send("Hello World!");
     });
 
+    // JWT Token Sign
     app.post("/jwt", (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
@@ -195,8 +196,14 @@ async function run() {
     app.get("/students-feedback", async (req, res) => {
       const result = await studentsFeedBackDB
         .find()
-        .sort({ Date: -1 })
+        .sort({ Date: 1 })
         .toArray();
+      res.send(result);
+    });
+
+    app.post("/students-feedback", async (req, res) => {
+      const { feedBack } = req.body;
+      const result = await studentsFeedBackDB.insertOne(feedBack);
       res.send(result);
     });
 
