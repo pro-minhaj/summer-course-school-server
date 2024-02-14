@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const stripe = require("stripe")(process.env.PAYMENT_GATEWAY_TOKEN);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.POST || 3000;
@@ -23,7 +24,7 @@ const VerifyJWT = (req, res, next) => {
     if (err) {
       return res
         .status(401)
-        .send({ error: true, message: "unauthorized access" });
+        .send({ error: true, message: "unauthorized access 2" });
     }
     req.decoded = decoded;
     next();
@@ -50,6 +51,7 @@ async function run() {
     const classesDB = database.collection("classes");
     const instructorsDB = database.collection("instructros");
     const studentsFeedBackDB = database.collection("studentsFeedBacks");
+    const paymentsDB = database.collection("payments");
 
     // Test API
     app.get("/", (req, res) => {
@@ -201,9 +203,34 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/students-feedback", async (req, res) => {
+    app.post("/students-feedback", VerifyJWT, async (req, res) => {
       const { feedBack } = req.body;
       const result = await studentsFeedBackDB.insertOne(feedBack);
+      res.send(result);
+    });
+
+    // Payments API
+    app.post("/create-payment-intent", VerifyJWT, async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    // TODO : VerifyJWT Not Working
+    app.post("/payments", async (req, res) => {
+      const payment = req.body;
+      const result = await paymentsDB.insertOne(payment);
+      const availableSeats = await classesDB.updateOne(
+        { _id: new ObjectId(payment.courseId) },
+        { $inc: { availableSeats: -1 } }
+      );
       res.send(result);
     });
 
