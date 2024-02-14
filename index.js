@@ -56,6 +56,14 @@ async function run() {
       res.send("Hello World!");
     });
 
+    app.post("/jwt", (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
+        expiresIn: "1d",
+      });
+      res.send({ token });
+    });
+
     // Users API
     app.post("/users", async (req, res) => {
       const user = req.body;
