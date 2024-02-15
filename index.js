@@ -82,6 +82,7 @@ async function run() {
     app.get("/classes-popular", async (req, res) => {
       const limit = req.query?.limit;
       const query = { popularity: "Popular" };
+
       const totalPopularClasses = await classesDB.countDocuments(query);
       const popularClasses = await classesDB
         .find(query)
@@ -227,8 +228,18 @@ async function run() {
     app.post("/payments", async (req, res) => {
       const payment = req.body;
       const result = await paymentsDB.insertOne(payment);
+
+      // Enroll
+      const id = payment?.courseId;
+      const filter = { _id: new ObjectId(id) };
+      const update = {
+        $addToSet: { enrollEmail: payment?.email },
+      };
+      const enroll = await classesDB.updateOne(filter, update);
+      console.log(enroll);
+
       const availableSeats = await classesDB.updateOne(
-        { _id: new ObjectId(payment.courseId) },
+        { _id: new ObjectId(id) },
         { $inc: { availableSeats: -1 } }
       );
       res.send(result);
