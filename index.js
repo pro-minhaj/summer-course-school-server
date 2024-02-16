@@ -231,7 +231,6 @@ async function run() {
       });
     });
 
-    // TODO : VerifyJWT Not Working
     app.post("/payments", VerifyJWT, async (req, res) => {
       const payment = req.body;
       const result = await paymentsDB.insertOne(payment);
@@ -322,6 +321,7 @@ async function run() {
       res.send(enrollClasses);
     });
 
+    // Carts API
     app.get("/my-carts", VerifyJWT, async (req, res) => {
       const email = req.query.email;
       const result = await cartsDB
@@ -359,6 +359,14 @@ async function run() {
       const id = req.params.id;
       const query = { classesId: id };
       const result = await cartsDB.deleteOne(query);
+      res.send(result);
+    });
+
+    // Payments API
+    app.get("/payment-history", VerifyJWT, async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const result = await paymentsDB.find(query).toArray();
       res.send(result);
     });
 
