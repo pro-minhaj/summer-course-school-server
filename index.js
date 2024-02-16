@@ -52,6 +52,7 @@ async function run() {
     const instructorsDB = database.collection("instructros");
     const studentsFeedBackDB = database.collection("studentsFeedBacks");
     const paymentsDB = database.collection("payments");
+    const cartsDB = database.collection("carts");
 
     // Test API
     app.get("/", (req, res) => {
@@ -128,6 +129,12 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await classesDB.findOne(query);
+      res.send(result);
+    });
+
+    app.post("/add-to-carts", VerifyJWT, async (req, res) => {
+      const item = req.body;
+      const result = await cartsDB.insertOne(item);
       res.send(result);
     });
 
@@ -304,6 +311,48 @@ async function run() {
         totalEnrollCount: totalEnrollCount[0],
         enrollClasses,
       });
+    });
+
+    app.get("/enroll-classes", VerifyJWT, async (req, res) => {
+      const email = req.query.email;
+      // Find Enroll Course
+      const enrollClasses = await classesDB
+        .find({ enrollEmail: email })
+        .toArray();
+      res.send(enrollClasses);
+    });
+
+    app.get("/my-carts", VerifyJWT, async (req, res) => {
+      const email = req.query.email;
+      const result = await cartsDB
+        .aggregate([
+          {
+            $match: {
+              email: email,
+            },
+          },
+          {
+            $addFields: {
+              cart_id: { $toObjectId: "$classesId" },
+            },
+          },
+          {
+            $lookup: {
+              from: "classes",
+              localField: "cart_id",
+              foreignField: "_id",
+              as: "classes",
+            },
+          },
+          {
+            $unwind: "$classes",
+          },
+          {
+            $replaceRoot: { newRoot: "$classes" },
+          },
+        ])
+        .toArray();
+      res.send(result);
     });
 
     await client.db("admin").command({ ping: 1 });
