@@ -225,7 +225,7 @@ async function run() {
     });
 
     // TODO : VerifyJWT Not Working
-    app.post("/payments", async (req, res) => {
+    app.post("/payments", VerifyJWT, async (req, res) => {
       const payment = req.body;
       const result = await paymentsDB.insertOne(payment);
 
@@ -236,13 +236,74 @@ async function run() {
         $addToSet: { enrollEmail: payment?.email },
       };
       const enroll = await classesDB.updateOne(filter, update);
-      console.log(enroll);
 
       const availableSeats = await classesDB.updateOne(
         { _id: new ObjectId(id) },
         { $inc: { availableSeats: -1 } }
       );
       res.send(result);
+    });
+
+    // DashBoard APIS
+
+    // USER DashBoard API
+    app.get("/order-status", VerifyJWT, async (req, res) => {
+      const email = req.query?.email;
+
+      // All Status
+      const allStatus = await paymentsDB
+        .aggregate([
+          {
+            $match: {
+              email: email,
+            },
+          },
+          {
+            $lookup: {
+              from: "payments",
+              localField: "email",
+              foreignField: "email",
+              as: "orders",
+            },
+          },
+          {
+            $group: {
+              _id: 0,
+              totalOrders: { $sum: 1 },
+              totalPayments: { $sum: "$price" },
+            },
+          },
+        ])
+        .toArray();
+
+      // Find Enroll Course
+      const totalEnrollCount = await classesDB
+        .aggregate([
+          {
+            $match: {
+              enrollEmail: email,
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalScore: { $sum: 1 },
+            },
+          },
+        ])
+        .toArray();
+
+      // Find Enroll Course
+      const enrollClasses = await classesDB
+        .find({ enrollEmail: email })
+        .limit(3)
+        .toArray();
+
+      res.send({
+        allStatus: allStatus[0],
+        totalEnrollCount: totalEnrollCount[0],
+        enrollClasses,
+      });
     });
 
     await client.db("admin").command({ ping: 1 });
