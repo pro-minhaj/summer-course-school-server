@@ -355,6 +355,13 @@ async function run() {
       res.send(result);
     });
 
+    app.delete("/my-carts/:id", VerifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { classesId: id };
+      const result = await cartsDB.deleteOne(query);
+      res.send(result);
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
