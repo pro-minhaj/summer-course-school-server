@@ -309,10 +309,51 @@ async function run() {
         ])
         .toArray();
 
+      // Charts Data
+      const chartsData = await paymentsDB
+        .aggregate([
+          {
+            $lookup: {
+              from: "classes",
+              let: { menuItemId: { $toObjectId: "$courseId" } },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $eq: ["$_id", "$$menuItemId"],
+                    },
+                  },
+                },
+              ],
+              as: "menuItemsData",
+            },
+          },
+          {
+            $unwind: "$menuItemsData",
+          },
+          {
+            $group: {
+              _id: "$menuItemsData.category",
+              quantity: { $sum: 1 },
+              revenue: { $sum: "$menuItemsData.price" },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              category: "$_id",
+              Quantity: "$quantity",
+              TotalPrice: "$revenue",
+            },
+          },
+        ])
+        .toArray();
+
       res.send({
         totalCourse,
         totalEnroll: totalEnroll[0].count,
         totalProfit: totalProfit[0].totalSum,
+        chartsData,
       });
     });
 
