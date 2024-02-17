@@ -69,6 +69,19 @@ async function run() {
       res.send({ token });
     });
 
+    // Verify Admin
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersDB.findOne(query);
+      if (user?.role !== "admin") {
+        return res
+          .status(403)
+          .send({ error: true, message: "forbidden Message" });
+      }
+      next();
+    };
+
     // Users API
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -252,6 +265,20 @@ async function run() {
     });
 
     // DashBoard APIS
+
+    // Admin APIS
+    app.get("/isAdmin/:email", VerifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      if (req.decoded.email !== email) {
+        return res.send({ admin: false });
+      }
+
+      const query = { email: email };
+      const user = await usersDB.findOne(query);
+      const result = user?.role === "admin";
+      res.send(result);
+    });
 
     // USER DashBoard API
     app.get("/order-status", VerifyJWT, async (req, res) => {
