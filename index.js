@@ -280,6 +280,42 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/admin-dashboard", VerifyJWT, verifyAdmin, async (req, res) => {
+      const totalCourse = await classesDB.estimatedDocumentCount();
+      const totalEnroll = await classesDB
+        .aggregate([
+          { $unwind: "$enrollEmail" },
+          {
+            $group: {
+              _id: null,
+              count: {
+                $sum: {
+                  $cond: [{ $eq: ["$enrollEmail", "$enrollEmail"] }, 1, 0],
+                },
+              },
+            },
+          },
+        ])
+        .toArray();
+
+      const totalProfit = await paymentsDB
+        .aggregate([
+          {
+            $group: {
+              _id: null,
+              totalSum: { $sum: "$price" },
+            },
+          },
+        ])
+        .toArray();
+
+      res.send({
+        totalCourse,
+        totalEnroll: totalEnroll[0].count,
+        totalProfit: totalProfit[0].totalSum,
+      });
+    });
+
     // USER DashBoard API
     app.get("/order-status", VerifyJWT, async (req, res) => {
       const email = req.query?.email;
