@@ -53,6 +53,7 @@ async function run() {
     const studentsFeedBackDB = database.collection("studentsFeedBacks");
     const paymentsDB = database.collection("payments");
     const cartsDB = database.collection("carts");
+    const applyInstructorsDB = database.collection("applyInstructors");
 
     // Test API
     app.get("/", (req, res) => {
@@ -367,6 +368,18 @@ async function run() {
       const email = req.query.email;
       const query = { email: email };
       const result = await paymentsDB.find(query).toArray();
+      res.send(result);
+    });
+
+    // Apply Instructor
+    app.post("/apply-instructor", VerifyJWT, async (req, res) => {
+      const instructor = req.body;
+      const query = { email: instructor.email };
+      const checkEmail = await applyInstructorsDB.findOne(query);
+      if (checkEmail) {
+        return res.send({ message: "You Have Already Apply For Instructor" });
+      }
+      const result = await applyInstructorsDB.insertOne(instructor);
       res.send(result);
     });
 
