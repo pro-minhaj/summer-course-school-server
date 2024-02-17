@@ -357,6 +357,11 @@ async function run() {
       });
     });
 
+    app.get("/manage-all-classes", VerifyJWT, verifyAdmin, async (req, res) => {
+      const result = await classesDB.find().toArray();
+      res.send(result);
+    });
+
     // USER DashBoard API
     app.get("/order-status", VerifyJWT, async (req, res) => {
       const email = req.query?.email;
