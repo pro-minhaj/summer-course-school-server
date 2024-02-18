@@ -374,6 +374,31 @@ async function run() {
       }
     );
 
+    app.get(
+      "/manage-all-instructors",
+      VerifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const result = await instructorsDB.find().toArray();
+        res.send(result);
+      }
+    );
+
+    app.delete(
+      "/instructor/delete/:id",
+      VerifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const email = req.query.email;
+
+        const query = { email: email };
+        const classesDelete = await classesDB.deleteMany(query);
+        const result = await instructorsDB.deleteOne({ _id: new ObjectId(id) });
+        res.send(result);
+      }
+    );
+
     // USER DashBoard API
     app.get("/order-status", VerifyJWT, async (req, res) => {
       const email = req.query?.email;
