@@ -379,8 +379,9 @@ async function run() {
       VerifyJWT,
       verifyAdmin,
       async (req, res) => {
-        const result = await instructorsDB.find().toArray();
-        res.send(result);
+        const allInstructors = await instructorsDB.find().toArray();
+        const pendingInstructors = await applyInstructorsDB.find().toArray();
+        res.send({ allInstructors, pendingInstructors });
       }
     );
 
@@ -396,6 +397,37 @@ async function run() {
         const classesDelete = await classesDB.deleteMany(query);
         const result = await instructorsDB.deleteOne({ _id: new ObjectId(id) });
         res.send(result);
+      }
+    );
+
+    app.delete(
+      "/pending-instructor/:id",
+      VerifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const status = req.query.value;
+        const query = { _id: new ObjectId(id) };
+
+        if (status === "accepted") {
+          const instructor = await applyInstructorsDB.findOne(query);
+          const { name, email, image, category } = instructor;
+          const newInstructor = {
+            name,
+            email,
+            image,
+            category,
+            totalCourse: 0,
+          };
+          const acceptedInstructor = await instructorsDB.insertOne(
+            newInstructor
+          );
+          const result = await applyInstructorsDB.deleteOne(query);
+          res.send(result);
+        } else {
+          const result = await applyInstructorsDB.deleteOne(query);
+          res.send(result);
+        }
       }
     );
 
