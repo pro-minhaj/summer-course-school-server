@@ -431,6 +431,30 @@ async function run() {
       }
     );
 
+    // user Collection api
+    app.get("/all-users", VerifyJWT, verifyAdmin, async (req, res) => {
+      const result = await usersDB.find().toArray();
+      res.send(result);
+    });
+
+    // Role
+    app.patch("/role-update/:id", VerifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const role = req.query.role;
+      const filter = { _id: new ObjectId(id) };
+
+      // Change Role
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          role: role && role,
+        },
+      };
+
+      const result = await usersDB.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
+
     // USER DashBoard API
     app.get("/order-status", VerifyJWT, async (req, res) => {
       const email = req.query?.email;
