@@ -422,6 +422,15 @@ async function run() {
           const acceptedInstructor = await instructorsDB.insertOne(
             newInstructor
           );
+          // UserDB
+          const filter = { email: email };
+          const updateDoc = {
+            $set: {
+              role: "instructor",
+            },
+          };
+          const role = await usersDB.updateOne(filter, updateDoc);
+
           const result = await applyInstructorsDB.deleteOne(query);
           res.send(result);
         } else {
@@ -454,6 +463,25 @@ async function run() {
       const result = await usersDB.updateOne(filter, updateDoc, options);
       res.send(result);
     });
+
+    // Cancel Instructor
+    app.patch(
+      "/cancel-instructor/:id",
+      VerifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+
+        const updateDoc = {
+          $set: {
+            role: "user",
+          },
+        };
+        const result = await usersDB.updateOne(query, updateDoc);
+        res.send(result);
+      }
+    );
 
     // USER DashBoard API
     app.get("/order-status", VerifyJWT, async (req, res) => {
