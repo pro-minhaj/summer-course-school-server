@@ -483,6 +483,12 @@ async function run() {
       }
     );
 
+    // All Payments
+    app.get("/all-payments", VerifyJWT, verifyAdmin, async (req, res) => {
+      const result = await paymentsDB.find().toArray();
+      res.send(result);
+    });
+
     // USER DashBoard API
     app.get("/order-status", VerifyJWT, async (req, res) => {
       const email = req.query?.email;
