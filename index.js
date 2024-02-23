@@ -483,6 +483,13 @@ async function run() {
       }
     );
 
+    app.delete("/user-delete/:id", VerifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await usersDB.deleteOne(query);
+      res.send(result);
+    });
+
     // All Payments
     app.get("/all-payments", VerifyJWT, verifyAdmin, async (req, res) => {
       const result = await paymentsDB.find().toArray();
@@ -616,6 +623,20 @@ async function run() {
         return res.send({ message: "You Have Already Apply For Instructor" });
       }
       const result = await applyInstructorsDB.insertOne(instructor);
+      res.send(result);
+    });
+
+    // Instructors API
+    app.get("/isInstructor/:email", VerifyJWT, async (req, res) => {
+      const email = req.query.email;
+
+      if (req.decoded.email !== email) {
+        return res.send({ instructor: false });
+      }
+
+      const query = { email: email };
+      const instructor = await usersDB.findOne(query);
+      const result = instructor.role === "instructor";
       res.send(result);
     });
 
