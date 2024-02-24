@@ -82,6 +82,19 @@ async function run() {
       next();
     };
 
+    // Verify Instructor
+    const verifyInstructor = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersDB.findOne(query);
+      if (user?.role !== "instructor") {
+        return res
+          .status(403)
+          .send({ error: true, message: "forbidden Message" });
+      }
+      next();
+    };
+
     // Users API
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -627,18 +640,76 @@ async function run() {
     });
 
     // Instructors API
+
     app.get("/isInstructor/:email", VerifyJWT, async (req, res) => {
-      const email = req.query.email;
+      const email = req.params.email;
 
       if (req.decoded.email !== email) {
-        return res.send({ instructor: false });
+        return res.send(false);
       }
 
       const query = { email: email };
       const instructor = await usersDB.findOne(query);
-      const result = instructor.role === "instructor";
+      const result = instructor?.role === "instructor";
       res.send(result);
     });
+
+    // Instructor Dashboard APIs
+    app.get(
+      "/instructor-dashboard-status",
+      VerifyJWT,
+      verifyInstructor,
+      async (req, res) => {
+        const email = req.query.email;
+        const query = { email: email };
+
+        // Total Course
+        const totalCourse = await classesDB.countDocuments(query);
+
+        // Total Enroll
+        const totalEnroll = await classesDB
+          .aggregate([
+            { $match: { email: email } },
+            {
+              $project: {
+                _id: null,
+                enrollEmailCount: { $size: "$enrollEmail" },
+              },
+            },
+          ])
+          .toArray();
+        const totalEnrollCount = totalEnroll.reduce(
+          (acc, curr) => acc + curr.enrollEmailCount,
+          0
+        );
+
+        // Total Profit
+        const totalProfit = await paymentsDB
+          .aggregate([
+            {
+              $match: {
+                instructorEmail: email,
+              },
+            },
+            { $group: { _id: null, totalProfit: { $sum: "$price" } } },
+          ])
+          .toArray();
+        const profit = totalProfit.reduce(
+          (acc, curr) => acc + curr.totalProfit,
+          0
+        );
+
+        // My Course
+        const courses = await classesDB.find(query).toArray();
+
+        res.send({
+          totalCourse,
+          totalEnrollCount,
+          profit,
+          courses,
+        });
+      }
+    );
 
     await client.db("admin").command({ ping: 1 });
     console.log(
