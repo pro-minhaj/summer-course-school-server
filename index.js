@@ -734,6 +734,39 @@ async function run() {
       }
     );
 
+    app.get("/update-classes/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await classesDB.findOne(query);
+      res.send(result);
+    });
+
+    app.patch(
+      "/update-classes/:id",
+      VerifyJWT,
+      verifyInstructor,
+      async (req, res) => {
+        const id = req.params.id;
+        const item = req.body;
+        const { name, price, category, availableSeats, details } = item;
+
+        const filler = { _id: new ObjectId(id) };
+        const options = { upsert: true };
+        const updateDoc = {
+          $set: {
+            name,
+            price: parseFloat(price),
+            category,
+            availableSeats: parseInt(availableSeats),
+            details,
+          },
+        };
+
+        const result = await classesDB.updateOne(filler, updateDoc, options);
+        res.send(result);
+      }
+    );
+
     app.delete(
       "/course-delete/:id",
       VerifyJWT,
