@@ -711,6 +711,17 @@ async function run() {
       }
     );
 
+    app.post(
+      "/add-new-classes",
+      VerifyJWT,
+      verifyInstructor,
+      async (req, res) => {
+        const classes = req.body;
+        const result = await classesDB.insertOne(classes);
+        res.send(result);
+      }
+    );
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
