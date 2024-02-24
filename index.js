@@ -722,6 +722,30 @@ async function run() {
       }
     );
 
+    app.get(
+      "/all-courses/:email",
+      VerifyJWT,
+      verifyInstructor,
+      async (req, res) => {
+        const email = req.params.email;
+        const query = { email: email };
+        const result = await classesDB.find(query).toArray();
+        res.send(result);
+      }
+    );
+
+    app.delete(
+      "/course-delete/:id",
+      VerifyJWT,
+      verifyInstructor,
+      async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await classesDB.deleteOne(query);
+        res.send(result);
+      }
+    );
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
